@@ -5,6 +5,7 @@ const AuthSchema = new mongoose.Schema({
   password: String,
   name: String,
   trial: Boolean,
+  using: Boolean,
   type: String,
   next: [String],
 });

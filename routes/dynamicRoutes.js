@@ -1,11 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose'); // Import mongoose
+require('dotenv').config();
 const getDBConnection = require('../config/db');
 const getDynamicModel = require('../models/dynamicModel');
 const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, AuthSchema } = require('../models/schemas');
-const config = require('config');
 
-const DB_URI = config.get('DB_URI');
+const DB_URI = process.env.DB_URI
 
 const router = express.Router();
 

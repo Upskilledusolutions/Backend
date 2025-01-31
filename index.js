@@ -2,10 +2,11 @@ const express = require('express');
 const app = require('./app');
 const config = require('config');
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 // Environment variables
-const PORT = config.get('PORT') || 5000;
-const DB_URI = config.get('DB_URI');
+const PORT = process.env.PORT || 5000;
+const DB_URI = process.env.DB_URI
 
 // Connect to MongoDB
 mongoose
