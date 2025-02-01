@@ -4,6 +4,7 @@ require('dotenv').config();
 const getDBConnection = require('../config/db');
 const getDynamicModel = require('../models/dynamicModel');
 const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, AuthSchema } = require('../models/schemas');
+const AuthModel = require('../models/Authmodel'); // Import the Auth model
 
 const DB_URI = process.env.DB_URI
 
@@ -21,6 +22,33 @@ const schemaMap = {
   PracticeTest: PracticeSchema,
   Auth :AuthSchema,
 };
+
+router.post('/login', async (req, res) => {
+  const { userId, password } = req.body;
+
+  try {
+    const user = await AuthModel.findOne({ userId, password });
+
+    if (user) {
+      // If user is found, return success and user data
+      res.status(200).json({
+        success: true,
+        user: {
+          userId: user.userId,
+          name: user.name,
+          trial: user.trial,
+          type: user.type,
+          next: user.next,
+        },
+      });
+    } else {
+      // If user is not found, return error
+      res.status(401).json({ success: false, message: 'Invalid user ID or password' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
 
 router.get('/allCollections/:dbName', async (req, res) => {
   const dbName = req.params.dbName.trim(); // Database name from route parameter
