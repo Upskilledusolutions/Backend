@@ -6,9 +6,10 @@ const AuthSchema = new mongoose.Schema({
   name: String,
   trial: Boolean,
   using: Boolean,
+  active: Boolean,
   type: String,
   next: [String],
-});
+},{ timestamps: true });
 
 const lessonSchema = new mongoose.Schema({
   id: String,

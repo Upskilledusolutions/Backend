@@ -33,13 +33,7 @@ router.post('/login', async (req, res) => {
       // If user is found, return success and user data
       res.status(200).json({
         success: true,
-        user: {
-          userId: user.userId,
-          name: user.name,
-          trial: user.trial,
-          type: user.type,
-          next: user.next,
-        },
+        user: user,
       });
     } else {
       // If user is not found, return error
@@ -47,6 +41,29 @@ router.post('/login', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+router.post("/check-status", async (req, res) => {
+  try {
+      const { userId } = req.body;
+
+      if (!userId) {
+          return res.status(400).json({ success: false, message: "User ID is required" });
+      }
+
+      // Find user in database
+      const user = await AuthModel.findOne({ userId });
+
+      if (!user) {
+          return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+        return res.status(200).json({ success: true, user: user, message: "User is active" });
+      
+  } catch (error) {
+      console.error("Error checking user status:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
