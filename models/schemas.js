@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const AuthSchema = new mongoose.Schema({
-  userId: String,
-  password: String,
+  userId: { type: String, unique: true, required: true },  // Unique and required
+  password: { type: String, unique: true, required: true },  // Unique and required
   name: String,
   trial: Boolean,
   using: Boolean,
