@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const completedQuizSchema = new mongoose.Schema({
+  exercise: { type: String },
+  language: { type: String },
+  questionTypes: [{ type: String }],
+});
+
 const AuthSchema = new mongoose.Schema({
   userId: { type: String, unique: true, required: true },  // Unique and required
   password: { type: String, unique: true, required: true },  // Unique and required
@@ -9,6 +15,10 @@ const AuthSchema = new mongoose.Schema({
   active: Boolean,
   type: String,
   next: [String],
+  completedQuizzes: {
+    type: [completedQuizSchema],
+    default: [],
+  },
 },{ timestamps: true });
 
 const lessonSchema = new mongoose.Schema({

@@ -44,6 +44,77 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/completed-quizzes', async (req, res) => {
+  const { userId, completedQuizzes } = req.body;
+  try {
+    const user = await AuthModel.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Helper function that ensures questionTypes is an array
+    const normalizeQuestionTypes = (qt) => {
+      return Array.isArray(qt) ? qt : [qt];
+    };
+
+    // Helper function to merge a new quiz object into the user's completedQuizzes
+    const mergeQuiz = (newQuiz) => {
+      // Coerce exercise and language to strings for reliable comparison
+      const newExercise = String(newQuiz.exercise);
+      const newLanguage = String(newQuiz.language);
+      const newTypes = normalizeQuestionTypes(newQuiz.questionTypes);
+
+      // Find an existing entry with matching exercise and language
+      const existingQuiz = user.completedQuizzes.find(q => 
+        String(q.exercise) === newExercise && String(q.language) === newLanguage
+      );
+      
+      if (existingQuiz) {
+        // Add any new question types that aren't already present
+        newTypes.forEach(qt => {
+          if (!existingQuiz.questionTypes.includes(qt)) {
+            existingQuiz.questionTypes.push(qt);
+          }
+        });
+      } else {
+        // Otherwise, add the new quiz object (ensuring questionTypes is an array)
+        user.completedQuizzes.push({
+          exercise: newQuiz.exercise,
+          language: newQuiz.language,
+          questionTypes: newTypes,
+        });
+      }
+    };
+
+    // Determine if completedQuizzes is a single object or an array of objects
+    if (!Array.isArray(completedQuizzes)) {
+      mergeQuiz(completedQuizzes);
+    } else {
+      completedQuizzes.forEach(quiz => mergeQuiz(quiz));
+    }
+    
+    await user.save();
+    res.json({ message: 'Completed quizzes updated', completedQuizzes: user.completedQuizzes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// Optionally, an endpoint to load quizzes when the user logs in:
+router.get('/completed-quizzes/:userId', async (req, res) => {
+  try {
+    const user = await AuthModel.findOne({ userId: req.params.userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ completedQuizzes: user.completedQuizzes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 router.post("/check-status", async (req, res) => {
   try {
       const { userId } = req.body;
