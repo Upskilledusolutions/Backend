@@ -44,6 +44,21 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/users/totalScores', async (req, res) => {
+  try {
+    // Find all users with a totalScore field and retrieve only the totalScore and userId
+    const usersWithScores = await AuthModel.find(
+      { "performance.totalScore": { $exists: true, $ne: null } }, // Ensure totalScore exists and is not null
+      { userId: 1, "performance.totalScore": 1, _id: 0 } // Project only userId and totalScore
+    );
+
+    res.status(200).json({ success: true, users: usersWithScores });
+  } catch (error) {
+    console.error('Error fetching totalScores:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/completed-quizzes', async (req, res) => {
   const { userId, completedQuizzes } = req.body;
   try {
@@ -100,6 +115,146 @@ router.post('/completed-quizzes', async (req, res) => {
   }
 });
 
+router.get('/:userId/performance', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    // Only select the performance field and exclude _id
+    const userPerformance = await AuthModel.findOne(
+      { userId },
+      { performance: 1, _id: 0 }
+    );
+    
+    if (!userPerformance || !userPerformance.performance) {
+      return res.status(404).json({ error: "User performance not found" });
+    }
+    
+    res.json(userPerformance.performance);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:userId/scores', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await AuthModel.findOne({ userId }, { performance: 1, _id: 0 });
+    if (!user || !user.performance) {
+      return res.status(404).json({ error: 'User performance not found' });
+    }
+
+    const { dailyScores, weeklyScores, monthlyScores } = user.performance;
+    res.json({ success: true, dailyScores, weeklyScores, monthlyScores });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper function to compare two arrays (order-insensitive)
+const arraysEqual = (a = [], b = []) => {
+  if (a.length !== b.length) return false;
+  const sortedA = a.slice().sort();
+  const sortedB = b.slice().sort();
+  return sortedA.every((val, index) => val === sortedB[index]);
+};
+
+// POST /api/auth/updateScore
+router.post('/updateScore', async (req, res) => {
+  let { userId, points, exercise, language, questionTypes } = req.body;
+  try {
+    const user = await AuthModel.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Ensure performance exists
+    if (!user.performance) {
+      user.performance = { totalScore: 0, dailyScores: {}, weeklyScores: {}, monthlyScores: {}, completedExercises: [] };
+    }
+
+    // Convert and sanitize data types
+    const newScore = Number(points);
+    const exerciseNum = Number(exercise);
+    const qTypes = Array.isArray(questionTypes) ? questionTypes : [questionTypes];
+
+    // Get current date, week, and month
+    const today = new Date();
+    const dateKey = today.toISOString().split('T')[0]; // e.g., "2025-04-07"
+    const weekKey = `${today.getFullYear()}-W${Math.ceil(today.getDate() / 7)}`; // e.g., "2025-W15"
+    const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`; // e.g., "2025-04"
+
+    // Update completedExercises
+    const existingExercise = user.performance.completedExercises.find(
+      (ex) => ex.exercise === exerciseNum && ex.language === language
+    );
+
+    if (existingExercise) {
+      // Update the score only if the new score is higher
+      if (newScore > existingExercise.score) {
+        const scoreDifference = newScore - existingExercise.score;
+
+        // Update the totalScore by adding the difference
+        user.performance.totalScore += scoreDifference;
+
+        // Update daily, weekly, and monthly scores
+        user.performance.dailyScores.set(
+          dateKey,
+          (user.performance.dailyScores.get(dateKey) || 0) + scoreDifference
+        );
+        user.performance.weeklyScores.set(
+          weekKey,
+          (user.performance.weeklyScores.get(weekKey) || 0) + scoreDifference
+        );
+        user.performance.monthlyScores.set(
+          monthKey,
+          (user.performance.monthlyScores.get(monthKey) || 0) + scoreDifference
+        );
+
+        // Update the exercise score
+        existingExercise.score = newScore;
+      }
+
+      // Add any new question types that aren't already present
+      qTypes.forEach((qt) => {
+        if (!existingExercise.questionTypes.includes(qt)) {
+          existingExercise.questionTypes.push(qt);
+        }
+      });
+    } else {
+      // Add a new completed exercise
+      user.performance.completedExercises.push({
+        exercise: exerciseNum,
+        language,
+        questionTypes: qTypes,
+        score: newScore,
+        date: today,
+      });
+
+      // Add the new score to the totalScore
+      user.performance.totalScore += newScore;
+
+      // Update daily, weekly, and monthly scores
+      user.performance.dailyScores.set(
+        dateKey,
+        (user.performance.dailyScores.get(dateKey) || 0) + newScore
+      );
+      user.performance.weeklyScores.set(
+        weekKey,
+        (user.performance.weeklyScores.get(weekKey) || 0) + newScore
+      );
+      user.performance.monthlyScores.set(
+        monthKey,
+        (user.performance.monthlyScores.get(monthKey) || 0) + newScore
+      );
+    }
+
+    // Save the updated user
+    await user.save();
+    res.json({ success: true, performance: user.performance });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Optionally, an endpoint to load quizzes when the user logs in:
 router.get('/completed-quizzes/:userId', async (req, res) => {
