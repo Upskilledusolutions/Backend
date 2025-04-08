@@ -182,45 +182,32 @@ router.post('/updateScore', async (req, res) => {
     const weekKey = `${today.getFullYear()}-W${Math.ceil(today.getDate() / 7)}`; // e.g., "2025-W15"
     const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`; // e.g., "2025-04"
 
-    // Update completedExercises
+    // Check if the exercise already exists
     const existingExercise = user.performance.completedExercises.find(
       (ex) => ex.exercise === exerciseNum && ex.language === language
     );
 
+    let scoreToAdd = newScore; // Default to the original score
+    let isFirstExerciseOfDay = false;
+
     if (existingExercise) {
-      // Update the score only if the new score is higher
-      if (newScore > existingExercise.score) {
-        const scoreDifference = newScore - existingExercise.score;
+      // If the exercise exists, calculate 50% of the new score
+      const halfScore = Math.floor(newScore * 0.5);
 
-        // Update the totalScore by adding the difference
-        user.performance.totalScore += scoreDifference;
-
-        // Update daily, weekly, and monthly scores
-        user.performance.dailyScores.set(
-          dateKey,
-          (user.performance.dailyScores.get(dateKey) || 0) + scoreDifference
-        );
-        user.performance.weeklyScores.set(
-          weekKey,
-          (user.performance.weeklyScores.get(weekKey) || 0) + scoreDifference
-        );
-        user.performance.monthlyScores.set(
-          monthKey,
-          (user.performance.monthlyScores.get(monthKey) || 0) + scoreDifference
-        );
+      // Only update if the 50% score is greater than the existing score
+      if (halfScore > existingExercise.score) {
+        const scoreDifference = halfScore - existingExercise.score;
 
         // Update the exercise score
-        existingExercise.score = newScore;
-      }
+        existingExercise.score = halfScore;
 
-      // Add any new question types that aren't already present
-      qTypes.forEach((qt) => {
-        if (!existingExercise.questionTypes.includes(qt)) {
-          existingExercise.questionTypes.push(qt);
-        }
-      });
+        // Add the difference to the scores
+        scoreToAdd = scoreDifference;
+      } else {
+        scoreToAdd = 0; // No update if the new score is not higher
+      }
     } else {
-      // Add a new completed exercise
+      // If the exercise does not exist, add it to completedExercises
       user.performance.completedExercises.push({
         exercise: exerciseNum,
         language,
@@ -228,23 +215,31 @@ router.post('/updateScore', async (req, res) => {
         score: newScore,
         date: today,
       });
+    }
 
-      // Add the new score to the totalScore
-      user.performance.totalScore += newScore;
+    // Check if this is the first exercise of the day
+    if (!user.performance.dailyScores.has(dateKey)) {
+      isFirstExerciseOfDay = true;
+      scoreToAdd += 50; // Add +50 points for the first exercise of the day
+    }
 
-      // Update daily, weekly, and monthly scores
+    // Update daily, weekly, and monthly scores
+    if (scoreToAdd > 0) {
       user.performance.dailyScores.set(
         dateKey,
-        (user.performance.dailyScores.get(dateKey) || 0) + newScore
+        (user.performance.dailyScores.get(dateKey) || 0) + scoreToAdd
       );
       user.performance.weeklyScores.set(
         weekKey,
-        (user.performance.weeklyScores.get(weekKey) || 0) + newScore
+        (user.performance.weeklyScores.get(weekKey) || 0) + scoreToAdd
       );
       user.performance.monthlyScores.set(
         monthKey,
-        (user.performance.monthlyScores.get(monthKey) || 0) + newScore
+        (user.performance.monthlyScores.get(monthKey) || 0) + scoreToAdd
       );
+
+      // Update totalScore
+      user.performance.totalScore += scoreToAdd;
     }
 
     // Save the updated user
