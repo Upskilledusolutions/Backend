@@ -46,10 +46,10 @@ router.post('/login', async (req, res) => {
 
 router.get('/users/totalScores', async (req, res) => {
   try {
-    // Find all users with a totalScore field and retrieve only the totalScore and userId
+    // Find all users with a totalScore field and retrieve userId, name, and totalScore
     const usersWithScores = await AuthModel.find(
       { "performance.totalScore": { $exists: true, $ne: null } }, // Ensure totalScore exists and is not null
-      { userId: 1, "performance.totalScore": 1, _id: 0 } // Project only userId and totalScore
+      { userId: 1, name: 1, "performance.totalScore": 1, _id: 0 } // Project userId, name, and totalScore
     );
 
     res.status(200).json({ success: true, users: usersWithScores });
@@ -184,7 +184,7 @@ router.post('/updateScore', async (req, res) => {
 
     // Check if the exercise already exists
     const existingExercise = user.performance.completedExercises.find(
-      (ex) => ex.exercise === exerciseNum && ex.language === language
+      (ex) => ex.exercise === exerciseNum && ex.language === language && arraysEqual(ex.questionTypes, qTypes)
     );
 
     let scoreToAdd = newScore; // Default to the original score
