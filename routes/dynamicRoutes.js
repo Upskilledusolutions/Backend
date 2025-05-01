@@ -5,6 +5,8 @@ const getDBConnection = require('../config/db');
 const getDynamicModel = require('../models/dynamicModel');
 const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, AuthSchema } = require('../models/schemas');
 const AuthModel = require('../models/Authmodel'); // Import the Auth model
+const fetch = require('node-fetch'); // Use fetch to call external APIs
+const ip = require('ip');
 
 const DB_URI = process.env.DB_URI
 
@@ -30,17 +32,65 @@ router.post('/login', async (req, res) => {
     const user = await AuthModel.findOne({ userId, password });
 
     if (user) {
-      // If user is found, return success and user data
+      // Fetch the user's IP address
+      let ipAddress =
+        req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || "8.8.8.8";
+
+      // Convert IPv6 to IPv4 if necessary
+      if (ipAddress === "::1" || ipAddress === "127.0.0.1") {
+        ipAddress = "8.8.8.8"; // Fallback to a public IP for testing
+      } else if (ip.isV6Format(ipAddress)) {
+        ipAddress = ip.toString(ipAddress); // Convert IPv6 to IPv4
+      }
+
+      console.log("Resolved IP Address:", ipAddress);
+
+      // Fetch location data using an external API
+      let location = "Unknown";
+      try {
+        const locationResponse = await fetch(`https://ipinfo.io/${ipAddress}/json?token=f865848db16a1a`, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          },
+        });
+        const rawResponse = await locationResponse.text();
+        console.log("Raw API Response:", rawResponse);
+
+        if (!locationResponse.ok) {
+          console.error("Error fetching location data:", rawResponse);
+        } else {
+          const locationData = JSON.parse(rawResponse);
+          location = locationData.city
+            ? `${locationData.city}, ${locationData.region}, ${locationData.country}`
+            : "Unknown";
+        }
+      } catch (error) {
+        console.error("Error fetching location data:", error.message);
+      }
+
+      // Add the new login details to the loginHistory array
+      user.loginHistory.push({ ip: ipAddress, location, timestamp: new Date() });
+
+      // Keep only the last 3 entries in the loginHistory array
+      if (user.loginHistory.length > 3) {
+        user.loginHistory = user.loginHistory.slice(-3);
+      }
+
+      console.log("User before saving:", user);
+
+      await user.save();
+
       res.status(200).json({
         success: true,
-        user: user,
+        message: 'Login successful',
+        user,
       });
     } else {
-      // If user is not found, return error
       res.status(401).json({ success: false, message: 'Invalid user ID or password' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error during login:", error.message);
+    res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 });
 

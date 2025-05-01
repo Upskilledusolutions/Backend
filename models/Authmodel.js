@@ -49,6 +49,16 @@ const authSchema = new mongoose.Schema({
   trial: Boolean,
   type: String,
   next: [],
+  loginHistory: {
+    type: [
+      {
+        ip: { type: String, required: true },
+        location: { type: String, required: true },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  },
   completedQuizzes: {
     type: [completedQuizSchema],
     default: [],
