@@ -24,25 +24,44 @@ const schemaMap = {
 };
 
 router.post('/login', async (req, res) => {
-  const { userId, password } = req.body;
+  const { userId, password, ipAddress, location } = req.body;
 
   try {
+    // Find the user in the database
     const user = await AuthModel.findOne({ userId, password });
 
     if (user) {
-      // If user is found, return success and user data
+      // Add the new login details to the loginHistory array
+      user.loginHistory.push({
+        ip: ipAddress || 'Unknown',
+        location: location || 'Unknown',
+        timestamp: new Date(),
+      });
+
+      // Keep only the last 3 entries in the loginHistory array
+      if (user.loginHistory.length > 3) {
+        user.loginHistory = user.loginHistory.slice(-3);
+      }
+
+      // Save the updated user document
+      await user.save();
+
       res.status(200).json({
         success: true,
-        user: user,
+        message: 'Login successful',
+        user,
       });
     } else {
-      // If user is not found, return error
+      // If user is not found, return an error
       res.status(401).json({ success: false, message: 'Invalid user ID or password' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('Error during login:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 });
+
+module.exports = router;
 
 router.get('/users/totalScores', async (req, res) => {
   try {
