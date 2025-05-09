@@ -69,6 +69,4 @@ const authSchema = new mongoose.Schema({
   },
 }, { collection: 'users' }); // Ensure this is the correct collection name
 
-const AuthModel = authDb.model('Auth', authSchema);
-
-module.exports = AuthModel;
+module.exports = authDb.model('Auth', authSchema);

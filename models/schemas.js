@@ -1,25 +1,69 @@
 const mongoose = require('mongoose');
 
 const completedQuizSchema = new mongoose.Schema({
-  exercise: { type: String },
+  exercise: { type: Number },
   language: { type: String },
   questionTypes: [{ type: String }],
 });
 
+const completedExerciseSchema = new mongoose.Schema({
+  exercise: { type: Number },
+  language: { type: String },
+  questionTypes: [{ type: String }],
+  score: { type: Number, default: 0 },
+  date: { type: Date, default: Date.now },
+}, { _id: false });
+
+// The performance schema nests the overall total and an array of completed exercises.
+const performanceSchema = new mongoose.Schema({
+  totalScore: { type: Number, default: 0 },
+  dailyScores: {
+    type: Map, // Use a Map to store scores by date (e.g., { "2025-04-07": 100 })
+    of: Number,
+    default: {},
+  },
+  weeklyScores: {
+    type: Map, // Use a Map to store scores by week (e.g., { "2025-W15": 500 })
+    of: Number,
+    default: {},
+  },
+  monthlyScores: {
+    type: Map, // Use a Map to store scores by month (e.g., { "2025-04": 2000 })
+    of: Number,
+    default: {},
+  },
+  completedExercises: {
+    type: [completedExerciseSchema],
+    default: [],
+  },
+}, { _id: false });
+
 const AuthSchema = new mongoose.Schema({
-  userId: { type: String, unique: true, required: true },  // Unique and required
-  password: { type: String, unique: true, required: true },  // Unique and required
+  userId: String,
+  password: String,
   name: String,
   trial: Boolean,
-  using: Boolean,
-  active: Boolean,
   type: String,
-  next: [String],
+  next: [],
+  loginHistory: {
+    type: [
+      {
+        ip: { type: String, required: true },
+        location: { type: String, required: true },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  },
   completedQuizzes: {
     type: [completedQuizSchema],
     default: [],
   },
-},{ timestamps: true });
+  performance: {
+    type: performanceSchema,
+    default: {},
+  },
+}, { collection: 'users' }); // Ensure this is the correct collection name
 
 const lessonSchema = new mongoose.Schema({
   id: String,
@@ -103,4 +147,20 @@ const PracticeSchema = new mongoose.Schema({
   ]
 });
 
-module.exports = { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, AuthSchema, PracticeSchema };
+const QuestionSchema = new mongoose.Schema({
+  topic: { type: String, required: true },
+  question: { type: String, required: true },
+  user: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  likes: { type: Number, default: 0 },
+  likedBy: [{ type: String }], // Array of user IDs who liked the post
+  replies: [
+    {
+      user: { type: String, required: true },
+      reply: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
+});
+
+module.exports = { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, AuthSchema, PracticeSchema, QuestionSchema};

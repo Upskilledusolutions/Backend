@@ -3,13 +3,13 @@ const mongoose = require('mongoose'); // Import mongoose
 require('dotenv').config();
 const getDBConnection = require('../config/db');
 const getDynamicModel = require('../models/dynamicModel');
-const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, AuthSchema } = require('../models/schemas');
-const AuthModel = require('../models/Authmodel'); // Import the Auth model
+const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, QuestionSchema, AuthSchema } = require('../models/schemas');
+const { authSchema } = require('../models/Authmodel'); // Import the Auth model
 
 const DB_URI = process.env.DB_URI
 
 const router = express.Router();
-
+ 
 // Map for selecting schema based on database
 const schemaMap = {
   Lessons: lessonSchema,
@@ -20,7 +20,7 @@ const schemaMap = {
   ReadingP: ReadingPSchema,
   Writing: WritingSchema,
   PracticeTest: PracticeSchema,
-  Auth :AuthSchema,
+  Auth: AuthSchema,
 };
 
 router.post('/login', async (req, res) => {
@@ -28,6 +28,9 @@ router.post('/login', async (req, res) => {
 
   try {
     // Find the user in the database
+    const authDB = getDBConnection('Auth');
+    const AuthModel = authDB.model('Auth', authSchema);
+
     const user = await AuthModel.findOne({ userId, password });
 
     if (user) {
@@ -66,6 +69,9 @@ module.exports = router;
 router.get('/users/totalScores', async (req, res) => {
   try {
     // Find all users with a totalScore field and retrieve userId, name, and totalScore
+        // Find the user in the database
+        const authDB = getDBConnection('Auth');
+        const AuthModel = authDB.model('Auth', authSchema);
     const usersWithScores = await AuthModel.find(
       { "performance.totalScore": { $exists: true, $ne: null } }, // Ensure totalScore exists and is not null
       { userId: 1, name: 1, "performance.totalScore": 1, _id: 0 } // Project userId, name, and totalScore
@@ -81,6 +87,9 @@ router.get('/users/totalScores', async (req, res) => {
 router.post('/completed-quizzes', async (req, res) => {
   const { userId, completedQuizzes } = req.body;
   try {
+        // Find the user in the database
+        const authDB = getDBConnection('Auth');
+        const AuthModel = authDB.model('Auth', authSchema);
     const user = await AuthModel.findOne({ userId });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -138,6 +147,9 @@ router.get('/:userId/performance', async (req, res) => {
   const { userId } = req.params;
   try {
     // Only select the performance field and exclude _id
+        // Find the user in the database
+        const authDB = getDBConnection('Auth');
+        const AuthModel = authDB.model('Auth', authSchema);
     const userPerformance = await AuthModel.findOne(
       { userId },
       { performance: 1, _id: 0 }
@@ -156,6 +168,9 @@ router.get('/:userId/performance', async (req, res) => {
 router.get('/:userId/scores', async (req, res) => {
   const { userId } = req.params;
   try {
+        // Find the user in the database
+        const authDB = getDBConnection('Auth');
+        const AuthModel = authDB.model('Auth', authSchema);
     const user = await AuthModel.findOne({ userId }, { performance: 1, _id: 0 });
     if (!user || !user.performance) {
       return res.status(404).json({ error: 'User performance not found' });
@@ -180,6 +195,9 @@ const arraysEqual = (a = [], b = []) => {
 router.post('/updateScore', async (req, res) => {
   let { userId, points, exercise, language, questionTypes } = req.body;
   try {
+        // Find the user in the database
+        const authDB = getDBConnection('Auth');
+        const AuthModel = authDB.model('Auth', authSchema);
     const user = await AuthModel.findOne({ userId });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -273,6 +291,9 @@ router.post('/updateScore', async (req, res) => {
 // Optionally, an endpoint to load quizzes when the user logs in:
 router.get('/completed-quizzes/:userId', async (req, res) => {
   try {
+        // Find the user in the database
+        const authDB = getDBConnection('Auth');
+        const AuthModel = authDB.model('Auth', authSchema);
     const user = await AuthModel.findOne({ userId: req.params.userId });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -292,6 +313,10 @@ router.post("/check-status", async (req, res) => {
           return res.status(400).json({ success: false, message: "User ID is required" });
       }
 
+          // Connect to the "Auth" database
+    const authDB = getDBConnection('Auth');
+    const AuthModel = authDB.model('Auth', authSchema);
+
       // Find user in database
       const user = await AuthModel.findOne({ userId });
 
@@ -304,6 +329,150 @@ router.post("/check-status", async (req, res) => {
   } catch (error) {
       console.error("Error checking user status:", error);
       res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+
+// POST: Add a new question
+router.post('/questions', async (req, res) => {
+  const { topic, question, user } = req.body;
+
+  try {
+    if (!topic || !question || !user) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    // Connect to the "Question" database
+    const questionDB = getDBConnection('Question');
+    const Question = questionDB.model('Question', QuestionSchema);
+
+    // Create a new question
+    const newQuestion = new Question({ topic, question, user });
+    await newQuestion.save();
+
+    res.status(201).json({ success: true, message: 'Question added successfully.' });
+  } catch (error) {
+    console.error('Error adding question:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+});
+
+// GET: Retrieve all questions
+router.get('/questions', async (req, res) => {
+  try {
+    // Connect to the "Question" database
+    const questionDB = getDBConnection('Question');
+    const Question = questionDB.model('Question', QuestionSchema);
+
+    // Fetch all questions from the database
+    const questions = await Question.find().sort({ createdAt: -1 }); // Sort by newest first
+    res.status(200).json({ success: true, questions });
+  } catch (error) {
+    console.error('Error fetching questions:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+});
+
+router.post('/questions/:id/like', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body; // Assume userId is sent in the request body
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    // Connect to the "Question" database
+    const questionDB = getDBConnection('Question');
+    const Question = questionDB.model('Question', QuestionSchema);
+
+    // Find the question
+    const question = await Question.findById(id);
+    if (!question) {
+      return res.status(404).json({ success: false, message: 'Question not found' });
+    }
+
+    // Check if the user has already liked the post
+    if (question.likedBy.includes(userId)) {
+      return res.status(400).json({ success: false, message: 'User has already liked this post' });
+    }
+
+    // Add the user to the likedBy array and increment the likes count
+    question.likedBy.push(userId);
+    question.likes += 1;
+
+    // Save the updated question
+    await question.save();
+
+    res.status(200).json({ success: true, likes: question.likes });
+  } catch (error) {
+    console.error('Error liking question:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/questions/:id/unlike', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    // Connect to the "Question" database
+    const questionDB = getDBConnection('Question');
+    const Question = questionDB.model('Question', QuestionSchema);
+
+    // Find the question
+    const question = await Question.findById(id);
+    if (!question) {
+      return res.status(404).json({ success: false, message: 'Question not found' });
+    }
+
+    // Check if the user has liked the post
+    if (!question.likedBy.includes(userId)) {
+      return res.status(400).json({ success: false, message: 'User has not liked this post' });
+    }
+
+    // Remove the user from the likedBy array and decrement the likes count
+    question.likedBy = question.likedBy.filter((user) => user !== userId);
+    question.likes -= 1;
+
+    // Save the updated question
+    await question.save();
+
+    res.status(200).json({ success: true, likes: question.likes });
+  } catch (error) {
+    console.error('Error unliking question:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+router.post('/questions/:id/reply', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user, reply } = req.body;
+        // Connect to the "Question" database
+    const questionDB = getDBConnection('Question');
+    const Question = questionDB.model('Question', QuestionSchema);
+
+    if (!user || !reply) {
+      return res.status(400).json({ success: false, message: 'User and reply are required' });
+    }
+
+    const question = await Question.findByIdAndUpdate(
+      id,
+      { $push: { replies: { user, reply, createdAt: new Date() } } }, // Add the reply
+      { new: true }
+    );
+    if (!question) {
+      return res.status(404).json({ success: false, message: 'Question not found' });
+    }
+    res.status(200).json({ success: true, replies: question.replies });
+  } catch (error) {
+    console.error('Error adding reply:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
