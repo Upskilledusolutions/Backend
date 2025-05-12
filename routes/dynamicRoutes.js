@@ -24,7 +24,7 @@ const schemaMap = {
 };
 
 router.post('/login', async (req, res) => {
-  const { userId, password, ipAddress, location } = req.body;
+  const { name, userId, password, ipAddress, location } = req.body;
 
   try {
     // Find the user in the database
@@ -34,6 +34,10 @@ router.post('/login', async (req, res) => {
     const user = await AuthModel.findOne({ userId, password });
 
     if (user) {
+            // Explicitly check if the name matches
+            if (user.name !== name) {
+              return res.status(401).json({ success: false, message: 'Invalid name' });
+            }
       // Add the new login details to the loginHistory array
       user.loginHistory.push({
         ip: ipAddress || 'Unknown',
