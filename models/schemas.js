@@ -163,4 +163,20 @@ const QuestionSchema = new mongoose.Schema({
   ],
 });
 
-module.exports = { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, AuthSchema, PracticeSchema, QuestionSchema};
+const registrationSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  phone: String,
+  city: String,
+  country: String,
+  age: Number,
+  contest: String,
+  subcategory: String,
+  amount: Number,
+  validTill: String,
+  receipt: String,
+  userId: String,
+  password: String,
+}, { timestamps: true });
+
+module.exports = { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, AuthSchema, PracticeSchema, QuestionSchema, registrationSchema };
