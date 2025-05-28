@@ -568,7 +568,7 @@ router.post('/:dbName/:collection', async (req, res) => {
 // Read All
 router.get('/:dbName/:collection', async (req, res) => {
   try {
-    const documents = await req.model.find();
+    const documents = await req.model.find().sort({ updatedAt: -1 });;
     res.json(documents);
   } catch (error) {
     res.status(500).json({ message: error.message });

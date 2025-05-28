@@ -43,6 +43,8 @@ const AuthSchema = new mongoose.Schema({
   password: String,
   name: String,
   trial: Boolean,
+  active: Boolean,
+  using: Boolean,
   type: String,
   next: [],
   loginHistory: {
