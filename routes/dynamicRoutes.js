@@ -72,13 +72,11 @@ module.exports = router;
 
 router.get('/users/totalScores', async (req, res) => {
   try {
-    // Find all users with a totalScore field and retrieve userId, name, and totalScore
-        // Find the user in the database
         const authDB = getDBConnection('Auth');
         const AuthModel = authDB.model('Auth', authSchema);
     const usersWithScores = await AuthModel.find(
       { "performance.totalScore": { $exists: true, $ne: null } }, // Ensure totalScore exists and is not null
-      { userId: 1, name: 1, "performance.totalScore": 1, _id: 0 } // Project userId, name, and totalScore
+      { userId: 1, name: 1, "performance.totalScore": 1, _id: 0, active: 1 } // Project userId, name, and totalScore
     );
 
     res.status(200).json({ success: true, users: usersWithScores });
