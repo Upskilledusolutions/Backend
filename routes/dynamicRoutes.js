@@ -76,7 +76,7 @@ router.get('/users/totalScores', async (req, res) => {
         const AuthModel = authDB.model('Auth', authSchema);
     const usersWithScores = await AuthModel.find(
       { "performance.totalScore": { $exists: true, $ne: null } }, // Ensure totalScore exists and is not null
-      { userId: 1, name: 1, "performance.totalScore": 1, _id: 0, active: 1 } // Project userId, name, and totalScore
+      { userId: 1, name: 1, "performance.totalScore": 1, _id: 0, active: 1, contest: 1 } // Project userId, name, and totalScore
     );
 
     res.status(200).json({ success: true, users: usersWithScores });
