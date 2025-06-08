@@ -70,6 +70,6 @@ const authSchema = new mongoose.Schema({
     type: performanceSchema,
     default: {},
   },
-}, { collection: 'users' }); // Ensure this is the correct collection name
+}, { collection: 'users', timestamps: true }); 
 
 module.exports = authDb.model('Auth', authSchema);
