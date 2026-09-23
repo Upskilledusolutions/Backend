@@ -29,9 +29,6 @@ router.post('/login', async (req, res) => {
 
   try {
     // Find the user in the database
-    const authDB = getDBConnection('Auth');
-    const AuthModel = authDB.model('Auth', AuthSchema);
-
     const user = await AuthModel.findOne({ userId, password });
 
     if (user) {
@@ -81,8 +78,6 @@ router.post('/logout', (req, res) => {
 
 router.get('/users/totalScores', async (req, res) => {
   try {
-        const authDB = getDBConnection('Auth');
-        const AuthModel = authDB.model('Auth', AuthSchema);
     const usersWithScores = await AuthModel.find(
       { "performance.totalScore": { $exists: true, $ne: null } }, // Ensure totalScore exists and is not null
       { userId: 1, name: 1, "performance.totalScore": 1, _id: 0, active: 1, contest: 1 } // Project userId, name, and totalScore
@@ -100,8 +95,6 @@ router.get('/reasoning/access/:userId', requireAuth, async (req, res) => {
     if (req.authUser.userId !== req.params.userId && req.authUser.type !== 'all') {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-    const authDB = getDBConnection('Auth');
-    const AuthModel = authDB.model('Auth', AuthSchema);
     const user = await AuthModel.findOne(
       { userId: req.params.userId },
       { userId: 1, reasoningAccess: 1, _id: 0 }
@@ -160,8 +153,6 @@ router.post('/completed-quizzes', async (req, res) => {
   const { userId, completedQuizzes } = req.body;
   try {
         // Find the user in the database
-        const authDB = getDBConnection('Auth');
-        const AuthModel = authDB.model('Auth', AuthSchema);
     const user = await AuthModel.findOne({ userId });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -220,8 +211,6 @@ router.get('/:userId/performance', async (req, res) => {
   try {
     // Only select the performance field and exclude _id
         // Find the user in the database
-        const authDB = getDBConnection('Auth');
-        const AuthModel = authDB.model('Auth', AuthSchema);
     const userPerformance = await AuthModel.findOne(
       { userId },
       { performance: 1, _id: 0 }
@@ -241,8 +230,6 @@ router.get('/:userId/scores', async (req, res) => {
   const { userId } = req.params;
   try {
         // Find the user in the database
-        const authDB = getDBConnection('Auth');
-        const AuthModel = authDB.model('Auth', AuthSchema);
     const user = await AuthModel.findOne({ userId }, { performance: 1, _id: 0 });
     if (!user || !user.performance) {
       return res.status(404).json({ error: 'User performance not found' });
@@ -268,8 +255,6 @@ router.post('/updateScore', async (req, res) => {
   let { userId, points, exercise, language, questionTypes } = req.body;
   try {
         // Find the user in the database
-        const authDB = getDBConnection('Auth');
-        const AuthModel = authDB.model('Auth', AuthSchema);
     const user = await AuthModel.findOne({ userId });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -364,8 +349,6 @@ router.post('/updateScore', async (req, res) => {
 router.get('/completed-quizzes/:userId', async (req, res) => {
   try {
         // Find the user in the database
-        const authDB = getDBConnection('Auth');
-        const AuthModel = authDB.model('Auth', AuthSchema);
     const user = await AuthModel.findOne({ userId: req.params.userId });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
