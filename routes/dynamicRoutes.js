@@ -377,30 +377,13 @@ router.get('/completed-quizzes/:userId', async (req, res) => {
 });
 
 
-router.post("/check-status", async (req, res) => {
+router.post("/check-status", requireAuth, async (req, res) => {
   try {
-      const { userId } = req.body;
-
-      if (!userId) {
-          return res.status(400).json({ success: false, message: "User ID is required" });
-      }
-
-          // Connect to the "Auth" database
-    const authDB = getDBConnection('Auth');
-    const AuthModel = authDB.model('Auth', authSchema);
-
-      // Find user in database
-      const user = await AuthModel.findOne({ userId });
-
-      if (!user) {
-          return res.status(404).json({ success: false, message: "User not found" });
-      }
-
-        return res.status(200).json({ success: true, user: user, message: "User is active" });
-      
+    const user = req.authUser.toObject();
+    return res.status(200).json({ success: true, user, message: "User is active" });
   } catch (error) {
-      console.error("Error checking user status:", error);
-      res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error checking user status:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
