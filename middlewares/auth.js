@@ -51,8 +51,10 @@ const readSession = (req) => {
 
 const setSessionCookie = (res, user) => {
   const token = createSessionToken(user);
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; SameSite=None${secure}`);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secure = isProduction ? '; Secure' : '';
+  const sameSite = isProduction ? 'None' : 'Lax';
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Max-Age=${SESSION_TTL_SECONDS}; Path=/; HttpOnly; SameSite=${sameSite}${secure}`);
 };
 
 const clearSessionCookie = (res) => {
