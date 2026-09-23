@@ -3,9 +3,9 @@ const mongoose = require('mongoose'); // Import mongoose
 require('dotenv').config();
 const getDBConnection = require('../config/db');
 const getDynamicModel = require('../models/dynamicModel');
-const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, QuestionSchema, AuthSchema } = require('../models/schemas');
+const { REASONING_LEVEL_ACCESS, lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, QuestionSchema, AuthSchema } = require('../models/schemas');
 const AuthModel = require('../models/Authmodel');
-const { setSessionCookie, clearSessionCookie, requireAuth, requireAdmin } = require('../middlewares/auth');
+const { setSessionCookie, clearSessionCookie, requireAuth, requireAdmin, isMasterTrainerId, applyAdministratorAccess } = require('../middlewares/auth');
 
 const DB_URI = process.env.DB_URI
 
@@ -48,8 +48,9 @@ router.post('/login', async (req, res) => {
         user.loginHistory = user.loginHistory.slice(-3);
       }
 
-      // Save the updated user document
+      // Save login history, then apply the effective administrator state for mastertrainer accounts.
       await user.save();
+      applyAdministratorAccess(user);
 
       setSessionCookie(res, user);
       const safeUser = user.toObject();
@@ -104,10 +105,14 @@ router.get('/reasoning/access/:userId', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    const reasoningAccess = isMasterTrainerId(user.userId)
+      ? REASONING_LEVEL_ACCESS.slice()
+      : (user.reasoningAccess || []);
+
     res.status(200).json({
       success: true,
       userId: user.userId,
-      reasoningAccess: user.reasoningAccess || [],
+      reasoningAccess,
     });
   } catch (error) {
     console.error('Error fetching Reasoning access:', error.message);
@@ -122,7 +127,9 @@ router.put('/reasoning/access/:userId', requireAuth, requireAdmin, async (req, r
       'reasoningL6', 'reasoningL7', 'reasoningL8', 'reasoningL9',
     ]);
     const access = Array.isArray(req.body.reasoningAccess) ? req.body.reasoningAccess : [];
-    const uniqueAccess = [...new Set(access.map(String))];
+    const uniqueAccess = isMasterTrainerId(req.params.userId)
+      ? REASONING_LEVEL_ACCESS.slice()
+      : [...new Set(access.map(String))];
     if (uniqueAccess.some(level => !allowed.has(level))) {
       return res.status(400).json({ success: false, message: 'Invalid Reasoning Level access' });
     }

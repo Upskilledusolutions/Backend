@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const AuthModel = require('../models/Authmodel');
+const { REASONING_LEVEL_ACCESS } = require('../models/schemas');
 
 const SESSION_COOKIE = 'ups_auth_session';
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -12,6 +13,16 @@ const getSessionSecret = () => {
 
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 const sign = (value) => crypto.createHmac('sha256', getSessionSecret()).update(value).digest('base64url');
+
+const isMasterTrainerId = (userId) => /^mastertrainer\d+$/i.test(String(userId || '').trim());
+
+const applyAdministratorAccess = (user) => {
+  if (!isMasterTrainerId(user.userId)) return user;
+  user.type = 'all';
+  user.active = true;
+  user.reasoningAccess = REASONING_LEVEL_ACCESS.slice();
+  return user;
+};
 
 const createSessionToken = (user) => {
   const payload = encode({
@@ -69,7 +80,11 @@ const requireAuth = async (req, res, next) => {
       { userId: session.userId },
       { userId: 1, name: 1, type: 1, active: 1, reasoningAccess: 1 }
     );
-    if (!user || !user.active) return res.status(401).json({ success: false, message: 'Authentication required' });
+    const isMasterTrainer = isMasterTrainerId(session.userId);
+    if (!user || (!user.active && !isMasterTrainer)) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    applyAdministratorAccess(user);
     req.authUser = user;
     return next();
   } catch (error) {
@@ -79,7 +94,7 @@ const requireAuth = async (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  if (!req.authUser || req.authUser.type !== 'all') {
+  if (!req.authUser || (!isMasterTrainerId(req.authUser.userId) && req.authUser.type !== 'all')) {
     return res.status(403).json({ success: false, message: 'Administrator access required' });
   }
   return next();
@@ -91,4 +106,6 @@ module.exports = {
   clearSessionCookie,
   requireAuth,
   requireAdmin,
+  isMasterTrainerId,
+  applyAdministratorAccess,
 };
