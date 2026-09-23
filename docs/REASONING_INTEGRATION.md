@@ -13,12 +13,12 @@ Backend production service:
 - Render service: **Backend**
 - Repository: `Upskilledusolutions/Backend`
 - Branch: `main`
-- Current production commit: `6c353c4529fe3b5c613deb3396f8a00b8d1ce500`
-- Render deploy: `dep-dapoj40jo6nc73ct8ct0`
+- Reasoning implementation commit: `6c353c4529fe3b5c613deb3396f8a00b8d1ce500`
 - Render state: **LIVE**
+- Later documentation-only commits may appear as the latest Render deployment without changing the Reasoning implementation.
 - Production URL: `https://backend-575y.onrender.com`
 
-The backend uses automatic deployment from `main`.
+The backend uses automatic deployment from `main`. The implementation commit above is part of the live deployment chain; deployment history may subsequently show documentation-only commits.
 
 ## 2. Shared authentication and identity
 
