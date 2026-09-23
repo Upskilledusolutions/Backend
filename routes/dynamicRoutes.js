@@ -4,7 +4,8 @@ require('dotenv').config();
 const getDBConnection = require('../config/db');
 const getDynamicModel = require('../models/dynamicModel');
 const { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, PracticeSchema, QuestionSchema, AuthSchema } = require('../models/schemas');
-const { authSchema } = require('../models/Authmodel'); // Import the Auth model
+const AuthModel = require('../models/Authmodel');
+const { setSessionCookie, clearSessionCookie, requireAuth, requireAdmin } = require('../middlewares/auth');
 
 const DB_URI = process.env.DB_URI
 
@@ -29,7 +30,7 @@ router.post('/login', async (req, res) => {
   try {
     // Find the user in the database
     const authDB = getDBConnection('Auth');
-    const AuthModel = authDB.model('Auth', authSchema);
+    const AuthModel = authDB.model('Auth', AuthSchema);
 
     const user = await AuthModel.findOne({ userId, password });
 
@@ -53,10 +54,13 @@ router.post('/login', async (req, res) => {
       // Save the updated user document
       await user.save();
 
+      setSessionCookie(res, user);
+      const safeUser = user.toObject();
+      delete safeUser.password;
       res.status(200).json({
         success: true,
         message: 'Login successful',
-        user,
+        user: safeUser,
       });
     } else {
       // If user is not found, return an error
@@ -69,6 +73,11 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+router.post('/logout', (req, res) => {
+  clearSessionCookie(res);
+  res.status(200).json({ success: true });
+});
 
 router.get('/users/totalScores', async (req, res) => {
   try {
@@ -86,8 +95,11 @@ router.get('/users/totalScores', async (req, res) => {
   }
 });
 
-router.get('/reasoning/access/:userId', async (req, res) => {
+router.get('/reasoning/access/:userId', requireAuth, async (req, res) => {
   try {
+    if (req.authUser.userId !== req.params.userId && req.authUser.type !== 'all') {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     const authDB = getDBConnection('Auth');
     const AuthModel = authDB.model('Auth', authSchema);
     const user = await AuthModel.findOne(
@@ -102,13 +114,47 @@ router.get('/reasoning/access/:userId', async (req, res) => {
     res.status(200).json({
       success: true,
       userId: user.userId,
-      reasoningAccess: user.reasoningAccess || ['reasoningL1'],
+      reasoningAccess: user.reasoningAccess || [],
     });
   } catch (error) {
     console.error('Error fetching Reasoning access:', error.message);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
+
+router.put('/reasoning/access/:userId', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const allowed = new Set([
+      'reasoningL1', 'reasoningL2', 'reasoningL3', 'reasoningL4', 'reasoningL5',
+      'reasoningL6', 'reasoningL7', 'reasoningL8', 'reasoningL9',
+    ]);
+    const access = Array.isArray(req.body.reasoningAccess) ? req.body.reasoningAccess : [];
+    const uniqueAccess = [...new Set(access.map(String))];
+    if (uniqueAccess.some(level => !allowed.has(level))) {
+      return res.status(400).json({ success: false, message: 'Invalid Reasoning Level access' });
+    }
+
+    const user = await AuthModel.findOneAndUpdate(
+      { userId: req.params.userId },
+      { $set: { reasoningAccess: uniqueAccess } },
+      { new: true, projection: { userId: 1, reasoningAccess: 1, _id: 0 } }
+    );
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    return res.status(200).json({
+      success: true,
+      userId: user.userId,
+      reasoningAccess: user.reasoningAccess || [],
+    });
+  } catch (error) {
+    console.error('Error updating Reasoning access:', error.message);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Protect the existing Auth administrator editor. The existing editor remains the UI;
+// the server now enforces that only an authenticated administrator can use it.
+router.use('/Auth/Users', requireAuth, requireAdmin);
 
 router.post('/completed-quizzes', async (req, res) => {
   const { userId, completedQuizzes } = req.body;
