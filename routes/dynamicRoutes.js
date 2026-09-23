@@ -86,6 +86,30 @@ router.get('/users/totalScores', async (req, res) => {
   }
 });
 
+router.get('/reasoning/access/:userId', async (req, res) => {
+  try {
+    const authDB = getDBConnection('Auth');
+    const AuthModel = authDB.model('Auth', authSchema);
+    const user = await AuthModel.findOne(
+      { userId: req.params.userId },
+      { userId: 1, reasoningAccess: 1, _id: 0 }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      userId: user.userId,
+      reasoningAccess: user.reasoningAccess || ['reasoningL1'],
+    });
+  } catch (error) {
+    console.error('Error fetching Reasoning access:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 router.post('/completed-quizzes', async (req, res) => {
   const { userId, completedQuizzes } = req.body;
   try {

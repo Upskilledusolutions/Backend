@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const getDBConnection = require('../config/db.js'); // Ensure correct path
+const { REASONING_LEVEL_ACCESS } = require('./schemas');
 
 // Use the 'Auth' database
 const authDb = getDBConnection('Auth');
@@ -49,6 +50,11 @@ const authSchema = new mongoose.Schema({
   trial: Boolean,
   type: String,
   next: [],
+  reasoningAccess: {
+    type: [String],
+    enum: REASONING_LEVEL_ACCESS,
+    default: ['reasoningL1'],
+  },
   contest: Boolean,
   active: Boolean,
   using: Boolean,

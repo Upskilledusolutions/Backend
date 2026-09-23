@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const REASONING_LEVEL_ACCESS = Object.freeze([
+  'reasoningL1',
+  'reasoningL2',
+  'reasoningL3',
+  'reasoningL4',
+  'reasoningL5',
+  'reasoningL6',
+  'reasoningL7',
+  'reasoningL8',
+  'reasoningL9',
+]);
+
 const completedQuizSchema = new mongoose.Schema({
   exercise: { type: Number },
   language: { type: String },
@@ -48,6 +60,11 @@ const AuthSchema = new mongoose.Schema({
   contest: Boolean,
   type: String,
   next: [],
+  reasoningAccess: {
+    type: [String],
+    enum: REASONING_LEVEL_ACCESS,
+    default: ['reasoningL1'],
+  },
   loginHistory: {
     type: [
       {
@@ -182,4 +199,4 @@ const registrationSchema = new mongoose.Schema({
   password: String,
 }, { timestamps: true });
 
-module.exports = { lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, AuthSchema, PracticeSchema, QuestionSchema, registrationSchema };
+module.exports = { REASONING_LEVEL_ACCESS, lessonSchema, conversationSchema, readingSchema, exerciseSchema, listeningSchema, ReadingPSchema, WritingSchema, AuthSchema, PracticeSchema, QuestionSchema, registrationSchema };
