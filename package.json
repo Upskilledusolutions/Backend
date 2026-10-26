@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js",
-    "test:english-aptitude-grading": "node scripts/testEnglishAptitudeGrading.js"
+    "test:english-aptitude-grading": "node scripts/testEnglishAptitudeGrading.js",
+    "sync:english-aptitude-answer-keys": "node scripts/syncEnglishAptitudeAnswerKeys.js",
+    "check:english-aptitude-answer-keys": "node scripts/syncEnglishAptitudeAnswerKeys.js --check"
   },
   "keywords": [],
   "author": "",
