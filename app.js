@@ -4,6 +4,7 @@ const cors = require('cors');
 const dynamicRoutes = require('./routes/dynamicRoutes');
 const registrationRoutes = require('./routes/registration.js');
 const reasoningRoutes = require('./routes/reasoning');
+const englishAptitudeRoutes = require('./routes/englishAptitude');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(bodyParser.json());
 
 // Dynamic Routes
 app.use('/api/reasoning', reasoningRoutes);
+app.use('/api/english-aptitude', englishAptitudeRoutes);
 app.use('/api', dynamicRoutes);
 app.use('/api', registrationRoutes);
 
