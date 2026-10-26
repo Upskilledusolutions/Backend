@@ -26,7 +26,7 @@ for (const question of answers) {
   assert.equal(wrong.result.isCorrect, false);
   assert.equal('explanation' in wrong.result, false, 'Do not disclose explanations/answers on an incorrect submission.');
 }
-assert.deepEqual(gradeEnglishAptitudeSingleSelect({ activityId: 'ENG-L1-S1-EXT-01', questionId: answers[0].questionId, selectedAnswer: answers[0].answer }).status, 404);
+assert.equal(gradeEnglishAptitudeSingleSelect({ activityId: 'ENG-L1-S1-EXT-01', questionId: answers[0].questionId, selectedAnswer: answers[0].answer }).status, 404);
 assert.equal(gradeEnglishAptitudeSingleSelect({ activityId: answers[0].activityId, questionId: 'unknown-question', selectedAnswer: 'A' }).status, 404);
 assert.equal(gradeEnglishAptitudeSingleSelect({ activityId: answers[0].activityId, questionId: answers[0].questionId, selectedAnswer: 'invented answer' }).status, 400);
 assert.equal(gradeEnglishAptitudeSingleSelect({ activityId: answers[0].activityId, questionId: answers[0].questionId, selectedAnswer: '' }).status, 400);
