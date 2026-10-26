@@ -23,3 +23,18 @@
 ## Test
 
 `npm run test:english-aptitude-grading`
+
+
+## Answer-key synchronization
+
+The server answer-key file is generated from the frontend's editable story bank to reduce manual drift. From the Backend repository, with both repositories cloned as sibling folders on the same drive, run:
+
+```cmd
+npm run sync:english-aptitude-answer-keys -- ..\\Aprioriedunext\\content\\EnglishAptitude\\editable\\L1\\S1\\english-L1-S1-story-01.json
+npm run check:english-aptitude-answer-keys -- ..\\Aprioriedunext\\content\\EnglishAptitude\\editable\\L1\\S1\\english-L1-S1-story-01.json
+npm run test:english-aptitude-grading
+```
+
+The sync command writes only `data/englishAptitudeL1S1StoryAnswers.js` in this backend branch. The check command is read-only and fails if the generated server key differs from the editable bank. Repeat the check whenever that source bank changes. These commands do not deploy the backend or enable the feature flag.
+
+This is a synchronization safeguard, not a substitute for moving answer keys out of the frontend bundle or reviewing the draft content before learner release.
