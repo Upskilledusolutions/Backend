@@ -20,10 +20,21 @@
 - It does not save attempts or analytics and does not add English Aptitude entitlement fields. Existing authentication confirms active shared-account identity only; any selective product access policy must be defined before release.
 - Do not merge/deploy until the frontend removes answer keys from its client bundle, server grading is integrated, auth/access requirements are agreed, and regression/security tests pass.
 
-## Test
+## Tests
 
-`npm run test:english-aptitude-grading`
+Existing grading unit tests:
 
+```cmd
+npm run test:english-aptitude-grading
+```
+
+Route security tests:
+
+```cmd
+npm run test:english-aptitude-route-security
+```
+
+The route security suite verifies that the real shared authentication middleware rejects requests without a session, the route remains disabled unless its feature flag is explicitly enabled, client-supplied correctness is ignored, and grading responses do not expose answer-key fields. The route-level flag/response checks use an isolated authentication stub so they do not require a database; this does not replace end-to-end authenticated testing against a configured backend.
 
 ## Answer-key synchronization
 
@@ -33,8 +44,13 @@ The server answer-key file is generated from the frontend's editable story bank 
 npm run sync:english-aptitude-answer-keys -- ..\\Aprioriedunext\\content\\EnglishAptitude\\editable\\L1\\S1\\english-L1-S1-story-01.json
 npm run check:english-aptitude-answer-keys -- ..\\Aprioriedunext\\content\\EnglishAptitude\\editable\\L1\\S1\\english-L1-S1-story-01.json
 npm run test:english-aptitude-grading
+npm run test:english-aptitude-route-security
 ```
 
 The sync command writes only `data/englishAptitudeL1S1StoryAnswers.js` in this backend branch. The check command is read-only and fails if the generated server key differs from the editable bank. Repeat the check whenever that source bank changes. These commands do not deploy the backend or enable the feature flag.
 
 This is a synchronization safeguard, not a substitute for moving answer keys out of the frontend bundle or reviewing the draft content before learner release.
+
+## Checkpoint — 2026-10-26
+
+The route-security test script and npm command have been added on this feature branch. **The new route-security suite has not yet been run in the user's local Windows checkout.** Keep the feature flag unset, and do not merge or deploy. Next: run the new route-security test; if it passes, continue with the frontend integration/security work while keeping the server-side grading gate disabled.
