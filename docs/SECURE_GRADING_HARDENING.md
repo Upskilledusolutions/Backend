@@ -1,7 +1,7 @@
 # Secure Grading Hardening — Backend Work Branch
 
 **Branch:** `secure-grading-hardening`  
-**Status:** Checkpoint 2 implementation scaffold added; generation against the local frontend checkout and full bank-coverage verification are still pending.  
+**Status:** Checkpoint 2 scaffold added; the owner has reported a local test passing on 2026-10-28. The exact command/output was not provided, so full bank export, zero-unresolved-issue coverage, and manifest verification remain unconfirmed.  
 **Production impact:** None intended. This branch is not `main`; no Render deployment, route registration, feature flag, or production setting has been changed.
 
 ## Scope
@@ -22,7 +22,7 @@ If the folders are different, the exporter supports `FRONTEND_REPO_PATH` as an o
   - `data/secure-grading/answer-key-export-audit.json` — source coverage and any unresolved question formats.
 - `scripts/testSecureGradingAnswerKeyRegistry.js`: tests schema validation, key lookup, duplicate rejection and invalid answer-key rejection.
 
-The generated manifest is not committed by the implementation code in this branch and has not been generated in this environment. The first local run must prove the current frontend checkout can be loaded and that every question in the selected banks has an understood grading rule.
+The generated manifest is not committed by the implementation code in this branch. The owner reported a local test passing on 2026-10-28, but did not identify the exact command or share export output. Do not mark the export complete until the current frontend checkout loads successfully, the exporter reports zero unresolved issues, and the generated manifest/counts are confirmed.
 
 ## Coverage included by the exporter
 
@@ -55,7 +55,7 @@ Expected first-command output includes:
 Secure grading answer-key registry tests passed.
 ```
 
-The JavaScript files have passed a static syntax check in this session, but the actual Node/npm command and exporter have **not** yet been run on the owner's Windows checkout. The export should report counts for Foreign Languages and Reasoning and write the manifest only if there are **zero unresolved issues**. If it stops with an issue count, inspect `data\secure-grading\answer-key-export-audit.json`; do not bypass the check or hand-create answer keys. Resolve the specific source-format or runtime-bank issue and rerun the export. No export result or generated manifest has yet been verified from the owner's Windows environment.
+The owner has reported that a test passed on Windows on 2026-10-28, but the exact command/output was not included in the message. The `secure-grading:check-answer-key-tools` command should pass syntax checks and registry assertions; this is distinct from the source-bank export. Next, confirm whether `npm run secure-grading:export-answer-keys` completed, reported counts for both products, and found **zero unresolved issues**. If it stops with an issue count, inspect `data\secure-grading\answer-key-export-audit.json`; do not bypass the check or hand-create answer keys. Resolve the specific source-format or runtime-bank issue and rerun the export. Until the export result, audit and generated manifest are confirmed, full bank coverage remains unverified.
 
 ## Boundaries
 
