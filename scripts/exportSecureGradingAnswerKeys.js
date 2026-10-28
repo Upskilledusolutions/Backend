@@ -127,7 +127,7 @@ function registerFrontendJsLoader() {
   };
 }
 
-function listJsFiles(directory, filePattern) {
+function listJsFiles(directory, filePattern, recursive = true) {
   if (!fs.existsSync(directory)) {
     throw new Error(`Required frontend question-bank directory does not exist: ${directory}`);
   }
@@ -135,7 +135,7 @@ function listJsFiles(directory, filePattern) {
   const walk = (current) => {
     for (const item of fs.readdirSync(current, { withFileTypes: true })) {
       const absolute = path.join(current, item.name);
-      if (item.isDirectory()) walk(absolute);
+      if (item.isDirectory() && recursive) walk(absolute);
       else if (item.isFile() && item.name.endsWith('.js') && (!filePattern || filePattern.test(item.name))) {
         found.push(absolute);
       }
@@ -258,9 +258,9 @@ function resolveForeignLanguageAnswerKey(question, family, answerIndexBase) {
         return { issue: 'answer/options do not form a valid single-select question' };
       }
       return {
-        gradingRule: 'reasoning-exact-option',
+        gradingRule: 'exact-text',
         answerKey: {
-          correctAnswer: question.answer,
+          expectedText: question.answer,
           acceptedResponses: cloneData(question.options),
           explanation: typeof question.explanation === 'string' ? question.explanation : '',
         },
@@ -312,7 +312,7 @@ function exportForeignLanguageKeys() {
 
   for (const group of sourceGroups) {
     const absoluteDir = path.join(frontendRoot, group.relativeDir);
-    const files = listJsFiles(absoluteDir, group.filePattern);
+    const files = listJsFiles(absoluteDir, group.filePattern, group.family !== 'quiz-time');
     for (const file of files) {
       const sourceFile = path.relative(frontendRoot, file).split(path.sep).join('/');
       let exported;
@@ -385,8 +385,6 @@ function getReasoningRuntimeModules() {
   return {
     getActivities: requireSource('activities.js').getActivities,
     level2Activities: requireSource('level2Stage1Activities.js').LEVEL2_STAGE1_ACTIVITIES,
-    stage5Activities: requireSource('stage5Activities.js').STAGE5_ACTIVITIES,
-    stage6Activities: requireSource('stage6Activities.js').STAGE6_ACTIVITIES,
     getLevel2Stage1QuestionsForActivity: requireSource('questionBankLevel2Stage1.js').getLevel2Stage1QuestionsForActivity,
     getStage1CalibratedQuestions: requireSource('stage1QuestionCalibration.js').getStage1CalibratedQuestions,
     getMissingStage1ReplacementQuestionsForActivity: requireSource('stage1MissingReplacements.js').getMissingStage1ReplacementQuestionsForActivity,
@@ -432,8 +430,6 @@ function exportReasoningKeys() {
   const activityList = [
     ...modules.getActivities(),
     ...modules.level2Activities,
-    ...modules.stage5Activities,
-    ...modules.stage6Activities,
   ];
   const activities = [];
   const seen = new Set();
@@ -515,8 +511,11 @@ function main() {
   if (!fs.existsSync(frontendRoot)) {
     throw new Error(`Frontend repository not found at ${frontendRoot}. Set FRONTEND_REPO_PATH if needed.`);
   }
-  const sourceRevision = gitValue(['rev-parse', 'HEAD']) || 'unknown-source-revision';
-  const sourceBranch = gitValue(['rev-parse', '--abbrev-ref', 'HEAD']) || 'unknown-source-branch';
+  const sourceRevision = gitValue(['rev-parse', 'HEAD']);
+  const sourceBranch = gitValue(['rev-parse', '--abbrev-ref', 'HEAD']);
+  if (!sourceRevision || !sourceBranch) {
+    throw new Error('The frontend source must be a Git checkout so the export can record the exact source revision.');
+  }
 
   registerFrontendJsLoader();
 
