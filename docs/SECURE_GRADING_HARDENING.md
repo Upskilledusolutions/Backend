@@ -45,17 +45,17 @@ Supported answer formats detected by the current exporter include choice-index a
 Run from Command Prompt in `D:\Backend` after the `secure-grading-hardening` branch is checked out. The exporter uses the Next.js/SWC package from the local frontend repository; if Next.js is missing there, install the frontend's locked dependencies first.
 
 ```bat
-npm run secure-grading:test-answer-key-registry
+npm run secure-grading:check-answer-key-tools
 npm run secure-grading:export-answer-keys
 ```
 
-Expected first-test output:
+Expected first-command output includes:
 
 ```
 Secure grading answer-key registry tests passed.
 ```
 
-The export should report counts for Foreign Languages and Reasoning and write the manifest only if there are **zero unresolved issues**. If it stops with an issue count, inspect `data\secure-grading\answer-key-export-audit.json`; do not bypass the check or hand-create answer keys. Resolve the specific source-format or runtime-bank issue and rerun the export. No export result or generated manifest has yet been verified from the owner's Windows environment.
+The JavaScript files have passed a static syntax check in this session, but the actual Node/npm command and exporter have **not** yet been run on the owner's Windows checkout. The export should report counts for Foreign Languages and Reasoning and write the manifest only if there are **zero unresolved issues**. If it stops with an issue count, inspect `data\secure-grading\answer-key-export-audit.json`; do not bypass the check or hand-create answer keys. Resolve the specific source-format or runtime-bank issue and rerun the export. No export result or generated manifest has yet been verified from the owner's Windows environment.
 
 ## Boundaries
 
