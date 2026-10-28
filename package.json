@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js",
     "secure-grading:test-answer-key-registry": "node scripts/testSecureGradingAnswerKeyRegistry.js",
-    "secure-grading:export-answer-keys": "node scripts/exportSecureGradingAnswerKeys.js"
+    "secure-grading:export-answer-keys": "node scripts/exportSecureGradingAnswerKeys.js",
+    "secure-grading:check-answer-key-tools": "node --check grading/answerKeyRegistry.js && node --check scripts/exportSecureGradingAnswerKeys.js && node --check scripts/testSecureGradingAnswerKeyRegistry.js && npm run secure-grading:test-answer-key-registry"
   },
   "keywords": [],
   "author": "",
