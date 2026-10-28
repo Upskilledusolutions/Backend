@@ -79,3 +79,8 @@ Before enabling grading or publishing an activity, verify that its questions map
 
 Backend changes must remain additive and English-specific. Do not unintentionally change the shared login/session contract, Reasoning endpoints/data, Foreign Languages functionality, or existing analytics. Test shared authentication and existing product flows when a shared dependency must change. A disabled-by-default feature route and passing unit tests do not authorize production deployment.
 
+## Related Foreign Languages and Reasoning hardening plan — 2026-10-28
+
+The frontend repository records the owner-requested cross-product plan in [Secure Grading Hardening — Foreign Languages and Reasoning Skills](https://github.com/Upskilledusolutions/Aprioriedunext/blob/english-aptitude-phase-c-schema/docs/SECURE_GRADING_HARDENING_PLAN.md). That plan covers eight major implementation checkpoints (expected range 8–10; maximum 11 before an owner-agreed estimate revision) and assumes the existing Render backend by default.
+
+This cross-product plan is distinct from the English Aptitude prototype described here. It does not authorize enabling `ENGLISH_APTITUDE_PREVIEW_ENABLED`, merging either feature branch, creating/configuring a Render service, or deploying. Keep the English route disabled until its own release gates are satisfied.
